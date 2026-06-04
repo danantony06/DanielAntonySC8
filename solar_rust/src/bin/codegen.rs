@@ -13,8 +13,9 @@ fn main() -> Result<()> {
     let jobs = [
         // ("./drivercontroller.dbc", "src/messages_drivercontroller.rs"),
         // ("./motorcontroller.dbc", "src/messages_motorcontroller.rs"),
-        ("./mppt.dbc", "src/messages_mppt_final.rs"),
-        //    ("./kelly_dbc.dbc","src/messages_kelly.rs")
+        //("./mppt.dbc", "src/messages_mppt_final.rs"),
+        //    ("./kelly_dbc.dbc","src/messages_kelly.rs"),
+        ("./Orion2_test_CANBUS.dbc", "src/test_messages_orion.rs")
     ];
 
     let mut errors: Vec<anyhow::Error> = Vec::new();

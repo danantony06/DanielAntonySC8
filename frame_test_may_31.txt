@@ -1,0 +1,47 @@
+ can0  0CF11E05   [8]  00 00 00 00 82 03 00 08
+  can0  0CF11F05   [8]  00 42 1E 00 01 07 00 00
+  can0  0CF11E05   [8]  00 00 00 00 82 03 00 08
+  can0  0CF11F05   [8]  00 42 1E 00 01 07 00 00
+  can0  0CF11E05   [8]  00 00 00 00 82 03 00 08
+  can0  0CF11F05   [8]  00 42 1E 00 01 07 00 00
+  can0  0CF11E05   [8]  00 00 00 00 82 03 00 08
+  can0  0CF11F05   [8]  00 42 1E 00 01 07 00 00
+  can0  0CF11E05   [8]  00 00 00 00 82 03 00 08
+  can0  0CF11F05   [8]  00 42 1E 00 01 07 00 00
+  can0  0CF11E05   [8]  00 00 00 00 82 03 00 08
+  can0  0CF11F05   [8]  00 42 1E 00 01 07 00 00
+  can0  0CF11E05   [8]  00 00 00 00 82 03 00 08
+  can0  0CF11F05   [8]  00 42 1E 00 01 07 00 00
+
+
+2026-05-31T20:28:40.456149Z  INFO solar_rust::bus1: Succesfully connected to Kelly  bus
+1780259320
+2026-05-31T20:28:40.469592Z  INFO solar_rust::bus1: Successfully Wrote Message2 Frame frame=Message2([0, 66, 30, 0, 1, 7, 0, 0]) time="1780259320"
+1780259320
+2026-05-31T20:28:40.494534Z  INFO solar_rust::bus1: Successfully Wrote PowerInput Frame frame=Message1([0, 0, 0, 0, 130, 3, 0, 8]) time="1780259320"
+1780259320
+2026-05-31T20:28:40.528541Z  INFO solar_rust::bus1: Successfully Wrote Message2 Frame frame=Message2([0, 66, 30, 0, 1, 7, 0, 0]) time="1780259320"
+1780259320
+2026-05-31T20:28:40.554457Z  INFO solar_rust::bus1: Successfully Wrote PowerInput Frame frame=Message1([0, 0, 0, 0, 130, 3, 0, 8]) time="1780259320"
+1780259320
+2026-05-31T20:28:40.585652Z  INFO solar_rust::bus1: Successfully Wrote Message2 Frame frame=Message2([0, 66, 30, 0, 1, 7, 0, 0]) time="1780259320"
+1780259320
+2026-05-31T20:28:40.614613Z  INFO solar_rust::bus1: Successfully Wrote PowerInput Frame frame=Message1([0, 0, 0, 0, 130, 3, 0, 8]) time="1780259320"
+1780259320
+2026-05-31T20:28:40.648085Z  INFO solar_rust::bus1: Successfully Wrote Message2 Frame frame=Message2([0, 64, 30, 0, 1, 7, 0, 0]) time="1780259320"
+1780259320
+2026-05-31T20:28:40.674486Z  INFO solar_rust::bus1: Successfully Wrote PowerInput Frame frame=Message1([0, 0, 0, 0, 130, 3, 0, 8]) time="1780259320"
+1780259320
+......
+2026-05-31T20:30:25.306646Z  INFO solar_rust::bus1: Successfully Wrote Message2 Frame frame=Message2([0, 66, 30, 0, 1, 7, 0, 0]) time="1780259425"
+1780259425
+2026-05-31T20:30:25.332938Z  INFO solar_rust::bus1: Successfully Wrote PowerInput Frame frame=Message1([0, 0, 0, 0, 130, 3, 0, 8]) time="1780259425"
+1780259425
+2026-05-31T20:30:25.364186Z  INFO solar_rust::bus1: Successfully Wrote Message2 Frame frame=Message2([0, 66, 30, 0, 1, 7, 0, 0]) time="1780259425"
+1780259425
+2026-05-31T20:30:25.393569Z  INFO solar_rust::bus1: Successfully Wrote PowerInput Frame frame=Message1([0, 0, 0, 0, 130, 3, 0, 8]) time="1780259425"
+1780259425
+2026-05-31T20:30:25.426639Z  INFO solar_rust::bus1: Successfully Wrote Message2 Frame frame=Message2([0, 66, 30, 0, 1, 7, 0, 0]) time="1780259425"
+1780259425
+2026-05-31T20:30:25.452978Z  INFO solar_rust::bus1: Successfully Wrote PowerInput Frame frame=Message1([0, 0, 0, 0, 130, 3, 0, 8]) time="1780259425"
+^C

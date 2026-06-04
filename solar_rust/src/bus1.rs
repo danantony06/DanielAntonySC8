@@ -29,11 +29,12 @@ pub async fn connect_bus_1() -> anyhow::Result<()> {
     let connection = "redis://127.0.0.1";
     let client = redis::Client::open(connection)?;
     let mut con: redis::aio::MultiplexedConnection =
-        client.get_multiplexed_async_connection().await?;
-    let sock_rx = match socketcan::CanSocket::open("vcan1") {
+        client.get_multiplexed_async_connection().await?; // Establish connection to redis server on pi  
+    let sock_rx = match socketcan::CanSocket::open("can0") { // bus 1 is cs0 so can0
+        // Open socket connection to the Kelly Bus
         //Open socket connection
         Ok(s) => {
-            info!("Succesfully connected to Kelly  bus");
+            info!("Succesfully connected to Kelly bus");
             s
         }
         Err(e) => {
@@ -44,6 +45,7 @@ pub async fn connect_bus_1() -> anyhow::Result<()> {
 
     let keys = [
         //instantiate redis keys
+        "Kelly:speed_rpm",
         "Kelly:motor_current",
         "Kelly:battery_voltage",
         "Kelly:id_error",
@@ -59,6 +61,7 @@ pub async fn connect_bus_1() -> anyhow::Result<()> {
         "Kelly:hall_galvanometer_error",
         "Kelly:throttle_signal",
         "Kelly:controller_temperature",
+        "Kelly:motor_temperature",
         "Kelly:command_status",
         "Kelly:feedback_status",
         "Kelly:hall_a",
@@ -98,14 +101,14 @@ pub async fn connect_bus_1() -> anyhow::Result<()> {
         }
     }
 
-    let async_fd = AsyncFd::new(sock_rx)?; //wrap socket with tokio asyncfd to get async capabilities when reading
+    let async_fd = AsyncFd::new(sock_rx)?; //wrap socket with tokio asyncfd to get async capabilities when recieving messages
 
     let flags = MsgFlags::empty(); //no flags so we pass empty
 
     loop {
         let (iov, time) = async_fd
             .async_io(Interest::READABLE, |inner| {
-                //Calling async_io method. 2 paramaters, we are reading so Interest readable. Second paramater is a closure, Inner is a mut reference  to the socket thats being wrapped by async fd
+                //Calling async_io method. 2 paramaters, we are reading so Interest Readable. Second paramater is a closure, Inner is a mut reference to the socket thats being wrapped by async fd
                 let mut data = [0u8; 16]; // data that we will be recieving from socket
                 let time = {
                     let mut cmsg_buffer = cmsg_space!(nix::sys::time::TimeVal); // cmsg buffer is what timestamp gets written into
@@ -124,25 +127,29 @@ pub async fn connect_bus_1() -> anyhow::Result<()> {
 
                 data_clone.clone_from_slice(&data); //clone data, we  need  to return owned array from closure
 
-                Ok((data_clone, time)) // pass up data clone and  time
+                Ok((data_clone, time)) // pass up data clone and time
             })
             .await?;
 
         let time_seconds = match time {
-            //ectract the official time value, if it was None we use the redis default value  "*" where redis provides the time
+            //extract the official time value, if it was None we use the redis default value "*" where redis provides the time
             Some(t_value) => t_value.tv_sec().to_string(),
             None => {
                 error!("Timestamp not written into cmsg buffer, using redis default value, *");
                 "*".to_string()
             }
         };
-        println!("{}", time_seconds);
         let can_id: u32 =
-            iov[0] as u32 | (iov[1] as u32) << 8 | (iov[2] as u32) << 16 | (iov[3] as u32) << 24;
+            iov[0] as u32 | (iov[1] as u32) << 8 | (iov[2] as u32) << 16 | (iov[3] as u32) << 24; // When we recvmsg from nix, the data array is filled with a Linux CanFd_frame. See linux docs on it here: https://docs.kernel.org/networking/can.html
+        // The first 4 bytes of the data array represent the can id as well as some flags. For some reason the id bytes are recieved in LE even though the data array isnt.
+        // To adjust for the endian, we get the first 4 bytes and bitshift accordingly
+        // Ex: [1,0,2,6] -> can_id = 6201
 
-        let eff_flag = (iov[3] as u32 & 0x80 as u32) >> 7;
+        let eff_flag = (iov[3] as u32 & 0x80 as u32) >> 7; // Again, the first 4 bytes are for the can id and some flags. The flags are found in the 4th byte(first if you think about endianess). 
+        // The bit flag 0x80 extracts the extended frame format flag which we should expect to be turned on for the kelly bus which uses extended can Ids
 
         let clean_id = if eff_flag == 1 {
+            //if we have eff flag enabled, create new socket can Extended Id struct. Pass into the constuctor the 4 bytes & with a bit mask to extract the 29 bits we need for the extended ID
             match socketcan::ExtendedId::new(can_id & 0x1FFFFFFF) {
                 Some(id) => socketcan::Id::Extended(id),
                 None => {
@@ -176,6 +183,9 @@ pub async fn connect_bus_1() -> anyhow::Result<()> {
         match matched_frame {
             Ok(messages_kelly::Messages::Message1(frame)) => {
                 if let Err(e) = redis::cmd("TS.MADD")
+                    .arg("Kelly:speed_rpm")
+                    .arg(&time_seconds)
+                    .arg(frame.speed_rpm())
                     .arg("Kelly:motor_current")
                     .arg(&time_seconds)
                     .arg(frame.motor_current())
@@ -221,7 +231,7 @@ pub async fn connect_bus_1() -> anyhow::Result<()> {
                     error!(frame = ?frame, error = %e, "Redis Write on Message1 Frame Failed");
                 };
 
-                info!(frame = ?frame, time = &time_seconds, "Successfully Wrote PowerInput Frame");
+                info!(frame = ?frame, time = &time_seconds, "Successfully Wrote Message1 Frame");
             }
 
             Ok(messages_kelly::Messages::Message2(frame)) => {
