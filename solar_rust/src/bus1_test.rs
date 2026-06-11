@@ -1,76 +1,53 @@
-mod parser;
-use parser::parse_log;
-mod messages_kelly;
-// use messages_kelly;
-mod decode;
+// Test data replayer — same shape as the old script, now dual-bus.
+// Loops through a single candump log file and routes each frame:
+//   extended ID (Kelly motorcontroller) → vcan0
+//   standard ID 0x600–0x62F (MPPTs)     → vcan1
+//
+// Run: cargo run --bin test_feed
+// (with test_data_combined.log in the working directory)
+
 use anyhow::{Context, Result};
-use socketcan::{dump::Reader, CanAnyFrame, CanFrame,CanFdSocket, Socket};
-use std::process;
-use std::path::Path;
 use embedded_can::Frame;
-mod compact;
-use compact::compact_data;
-use CanAnyFrame::*;
+use socketcan::{dump::Reader, CanAnyFrame, CanSocket, Socket};
+use std::path::Path;
+use std::thread::sleep;
+use std::time::Duration;
 
-fn bus1_test() -> anyhow::Result<()> {
+fn main() -> Result<()> {
+    let kelly_sock = CanSocket::open("vcan0") // bus 1: motorcontroller
+        .with_context(|| "Failed to open socket on vcan0")?;
 
-    compact_data(); // Helper function to make compact candump data: Only used for the mock data that we got from the Car
+    let mppt_sock = CanSocket::open("vcan1") // bus 2: mppts
+        .with_context(|| "Failed to open socket on vcan1")?;
 
-    let sock = CanFdSocket::open("vcan0") // Open Socket Connection. Using virtual can now for testing. This socket is what we will write to
-        .with_context(|| format!("Failed to open socket on vcan"))?;
+    let path = Path::new("src/test_data_combined.txt"); // Path to test data
 
-    let path = Path::new("kelly_kls_test_data.txt"); // Path to test data
+    loop {
+        // re-open the reader each pass so the file replays forever
+        let mut reader =
+            Reader::from_file(&path).with_context(|| "Error opening txt file")?;
 
-    let sock_rx = CanFdSocket::open("vcan0")  // Second Virtual Can Socket Connection. This socket will read from the socket we are writing to
-        .with_context(|| format!("Failed to oped rx socket on vcan0"))?;
+        for rec in reader.records() {
+            let (_ts, frame) = rec?;
 
-    let mut reader = Reader::from_file(&path)  // Use rust socketcan dump reader
-        .with_context(|| format!("Error opening log file"))?;
-
-    for rec in reader.records(){ //Loop through each line in candumps file. 
-    
-
-        let (ts,frame) = rec?; // seperate by timestamp and actuale frame
-        println!("{:?}",frame);
-
-        match frame {  // match based on what type of frame we have ie normal data or flexible data. Once matched, write to 1st socket
-            CanAnyFrame::Normal(f) => sock.write_frame(&f)?,
-            CanAnyFrame::Remote(f) => sock.write_frame(&f)?,
-            CanAnyFrame::Fd(f)     => sock.write_frame(&f)?,
-            _ => {}
-        }
-
-
-        // Read frame after we write to do computation on it
-        let read_frame = sock_rx.read_frame().context("Recieving Frame")?;
-
-
-        //Call helper function from dbc codegen file. from_can_message matches id of frame to either Message 1 or Message 2
-        let matched_frame = messages_kelly::Messages::from_can_message(read_frame.id(),read_frame.data()); 
-        
-        println!("{:?}", matched_frame);
-        
-        match matched_frame{
-
-            Ok(messages_kelly::Messages::Message1(msg)) => {  //Message 1 match chase
-                let translated = messages_kelly::Message1::decodeMessage(&msg); // Call helper function to decode Message 1 Type
-
-                println!("{:?}", translated);
+            match frame {
+                CanAnyFrame::Normal(f) => {
+                    // Kelly uses extended 29-bit IDs (0CF11E05 / 0CF11F05);
+                    // the MPPTs use standard 11-bit IDs at 0x600/0x610/0x620.
+                    if f.is_extended() {
+                        kelly_sock.write_frame(&f)?;
+                    } else {
+                        mppt_sock.write_frame(&f)?;
+                    }
+                }
+                CanAnyFrame::Remote(_) => {}
+                CanAnyFrame::Fd(_) => {} // readers expect classic frames only
+                _ => {}
             }
 
-            Ok(messages_kelly::Messages::Message2(msg)) => { //Message 2 match case
-                let translated = messages_kelly::Message2::decodeMessage(&msg); // Call helper function to decode Message 2 Type
-
-                println!("{:?}",translated);
-            }
-            
-            Err(_) => { println!("Cant Decode this shit");
+            // pace the replay so it streams continuously instead of
+            // dumping the whole file at once (~50 frames/sec)
+            sleep(Duration::from_millis(20));
         }
-        }
-
-
     }
-    
-    Ok(())
 }
-

@@ -4,6 +4,17 @@ name = "solar_rust"
 version = "0.1.0"
 edition = "2024"
 
+[[bin]]
+name = "dashboard"
+path = "src/dashboard.rs"
+
+
+
+[[bin]]
+name = "test_writes"
+path = "src/bus1_test.rs"
+
+
 [dependencies]
 anyhow = "1.0.99"
 arbitrary = "1.4.2"
@@ -12,6 +23,7 @@ clap = "4.5.57"
 dbc-codegen = { git = "https://github.com/technocreatives/dbc-codegen.git", rev = "5b9d3d0670563ac91f303ef689e0357b198dbc32" }
 defmt = "1.0.1"
 embedded-can = "0.4.1"
+iced = { version = "0.13.1", features = ["canvas", "tokio"] }
 iovec = "0.1.4"
 nix = {version = "0.31.2", features =["socket","uio"] }
 rand = "0.10.1"

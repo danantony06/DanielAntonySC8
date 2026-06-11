@@ -1,4 +1,3 @@
-use crate::messages_drivercontroller::CanError;
 use crate::messages_kelly::Message2FeedbackStatus;
 use crate::messages_mppt;
 use crate::messages_mppt::CanError as OtherCanError;
